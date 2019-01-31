@@ -95,10 +95,6 @@ def readEK80(file):
     FileData.Tranceiver[ii].DirectivityDropAt2XBeamWidth
     
     
-    #NMEA information
-    FileData.NMEA
-    FileData.NMEA.Telegram
-    FileData.NMEA.Time
     
     
     
@@ -125,12 +121,20 @@ def readEK80(file):
     
     #MRU data
     FileData.MRU = structtype()
-    FileData.MRU.Heave = dict()
     FileData.MRU.Time = dict()
+    FileData.MRU.Heave = dict()
     FileData.MRU.Pitch = dict()
     FileData.MRU.Roll = dict()
     FileData.MRU.Heading = dict()
+    FileData.MRU.Distance = dict()
     
+    #NMEA information
+    FileData.NMEA
+    FileData.NMEA.Telegram
+    FileData.NMEA.Time
+    
+    #Platform Data
+    FileData.Platform
     '''
 
 
@@ -206,6 +210,8 @@ def readEK80(file):
     FileData.MRU.Pitch = dict()
     FileData.MRU.Roll = dict()
     FileData.MRU.Heading = dict()
+    FileData.MRU.Distance = dict()
+    FileData.MRU.SpeedRelative = dict()
     
     
     def doXML0datagram(fid,FileData): 

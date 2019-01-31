@@ -5,6 +5,8 @@ from netCDF4 import Dataset
 import dateutil.parser
 import numpy as np
 
+
+
 def testNetCDF(ncfilename): 
     ''' testNetCDF function
     
@@ -121,9 +123,7 @@ def testNetCDF(ncfilename):
     
     
     def annotation_group_test(fid): 
-        #Testing of annotation group
-#        print('Test annotation group')
-        
+        #Check if dimesions are ok        
         try: 
             if not len(fid.dimensions)>=1: 
                 print('    ErrorMsg 15d:dataset.groups[\'Annotation\'].dimension has wrong dimension'+'\n')
@@ -131,85 +131,137 @@ def testNetCDF(ncfilename):
             print('    ErrorMsg 15a:dataset.groups[\'Annotation\'].dimension do not exist'+'\n')
         
         
+        
+        
+        #Check if all variables are there
         try: 
-            try:
-                fid.variables['time'].dimensions
-                if not len(fid.variables['time'].dimensions) == 1: 
-                    print('    ErrorMsg 16d: dataset.groups[\'Annotation\'].variables[\'time\'].dimensions has wrong dimension')
-                    print('                :' +str(fid.variables['time'].dimensions ))
-                    print('                :(\'time\',)'+'\n')
-                
-            except: 
-                print('    ErrorMsg 16a: dataset.groups[\'Annotation\'].variables[\'time\'].dimensions do not exist'+'\n')
-                
+            fid.variables['time']
+            do_time = True
         except: 
-            print('    ErrorMsg 16a: dataset.groups[\'Annotation\'].variables[\'time\'] do not exist'+'\n')
-        
-        
-            
-        if not fid.variables['time'].dimensions[0]=='time': 
-            print('Wrong dimension name')
-        
-        
+            do_time = False
+            print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'time\'] dont exist')
         try: 
-            fid.variables['time'].axis
-            if fid.variables['time'].axis != 'T': 
-                print('Wrong axis label')
+            do_text = True
+            fid.variables['annotation_text']
         except: 
-            print('Variable don\'t exist')
-        
-        
+            do_text = False
+            print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'annotation_text\'] dont exist')
         try: 
-            fid.variables['time'].calendar
-            if fid.variables['time'].calendar != 'gregorian': 
-                print('Wrong calender name')
+            do_annotgrp = True
         except: 
-            print('Variable don\'t exist')
+            print('    WarningMsg: dataset.groups[\'Annotation\'].variables[\'annotation_category\'] dont exist')
+            do_annotgrp = False
+        
+        
+        
+        if do_time == True: 
+            if not len(fid.variables['time'].dimensions) == len(fid.dimensions): 
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'time\'] has wrong dimension')
+            if not (fid.variables['time'].axis) == 'T':
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'time\'].axis has wrong info')
+            if not (fid.variables['time'].calendar) == 'gregorian':
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'time\'].calendar has wrong info')
+            if not (fid.variables['time'].long_name) == 'Timestamps of annotations':
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'time\'].long_name has wrong info')
+            if not (fid.variables['time'].standard_name) == 'time':
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'time\'].standard_name has wrong info')
+            if not (fid.variables['time'].units) == 'nanoseconds since 1601-01-01 00:00:00Z':
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'time\'].units has wrong info')
             
+        
+        
+        
+        if do_text == True: 
+            if not len(fid.variables['annotation_text'].dimensions) == len(fid.dimensions): 
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'annotation_text\'] has wrong dimension')
+            if not (fid.variables['annotation_text'].long_name) == "Annotation text":
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'annotation_text\'].long_name has wrong info')
             
+        
+
+        if do_annotgrp ==True: 
+            if not len(fid.variables['annotation_category'].dimensions) == len(fid.dimensions): 
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'annotation_category\'] has wrong dimension')
+             
+            if not (fid.variables['annotation_category'].long_name) == "Annotation category":
+                print('    ErrorMsg: dataset.groups[\'Annotation\'].variables[\'annotation_category\'].long_name has wrong info')
             
+        
+
     
     def environment_group_test(fid): 
 
+        #Check if dimesions are ok        
+        try: 
+            if not len(fid.dimensions)>=1: 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].dimension has wrong dimension'+'\n')
+        except: 
+            print('    ErrorMsg: dataset.groups[\'Environment\'].dimension do not exist'+'\n')
+        
+        
+        
+        #Test of dimesion name
         if not fid.variables['frequency'].dimensions[0] == 'frequency': 
-            print('    ErrorMsg: XX: wrong dimension name')
-    
-    
-        long_names = ['Indicative sound speed', 
-                      'Acoustic frequency', 
-                      'Indicative acoustic absorption']
-        
-        standard_names = ['speed_of_sound_in_sea_water', 
-                      'sound_frequency']
-        
-        units = ['dB/m', 'm/s','Hz']
-        
-        dimension_test = []
-        for var in fid.variables: 
-            #Check if long names is valid
-            print(fid.variables[var])
-            if not fid.variables[var].long_name in long_names: 
-                print('    ErrorMsg xxx: long name not valid')
-            
-            #test if standard names is valid
-            try: 
-                if not fid.variables[var].standard_name in standard_names: 
-                    print('    ErrorMsg xxx: standard name not valid')
-            except: 
-                print('    Warning msg: standard name for variable '+ var+' is not specified in ICES netcdf format')
+            print('    ErrorMsg: dataset.groups[\'Environment\'].dimension has wrong dimension name')
 
-            if not fid.variables[var].units in units: 
-                print('    ErrorMsg xxx: units not valid')
 
-            if not fid.variables[var].dimensions[0] =='frequency': 
-                print('    ErrorMsg xxx: wrong dimension name')
-            dimension_test = np.hstack((dimension_test,len(fid.variables[var])))
-        if not (len(np.unique(dimension_test))) == 1: 
-            print('    ErrorMsg xxx: inconsistent dimension between variables')
+        
+        #test if all variables exist        
+        try: 
+            fid.variables['frequency']
+            do_frequecy = True
+        except: 
+            do_frequecy = False
+            print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'Frequency\'] do not exist')
+        try: 
+            fid.variables['sound_speed_indicative']
+            do_soundspeed = True
+        except: 
+            do_soundspeed = False
+            print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'sound_speed_indicative\'] do not exist')
+        try: 
+            fid.variables['absorption_indicative']
+            do_abs = True
+        except: 
+            do_abs = False
+            print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'absorption_indicative\'] do not exist')
+        
+
+
+        #test frequency variable
+        if do_frequecy == True: 
+            if not len(fid.variables['frequency'].dimensions) == len(fid.dimensions): 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'frequency\'] has wrong dimension')
+            if not fid.variables['frequency'].long_name == 'Acoustic frequency': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'frequency\'].long_name has wrong info')
+            if not fid.variables['frequency'].units == 'Hz': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'frequency\'].units has wrong info')
+
+            if not fid.variables['frequency'].standard_name == 'sound_frequency': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'frequency\'].units has wrong info')
+
+                
+        if do_soundspeed == True: 
+            if not len(fid.variables['sound_speed_indicative'].dimensions) == len(fid.dimensions): 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'sound_speed_indicative\'] has wrong dimension')
+            if not fid.variables['sound_speed_indicative'].standard_name == 'speed_of_sound_in_sea_water': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'sound_speed_indicative\'].standard_name has wrong info')
+            if not fid.variables['sound_speed_indicative'].long_name == 'Indicative sound speed': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'sound_speed_indicative\'].long_name has wrong info')
+            if not fid.variables['sound_speed_indicative'].units == 'm/s': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'sound_speed_indicative\'].units has wrong info')
+
+                
+        if do_abs == True: 
+            if not len(fid.variables['absorption_indicative'].dimensions) == len(fid.dimensions): 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'absorption_indicative\'] has wrong dimension')
+            if not fid.variables['absorption_indicative'].long_name == 'Indicative acoustic absorption': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'absorption_indicative\'].long_name has wrong info')
+            if not fid.variables['absorption_indicative'].units == 'dB/m': 
+                print('    ErrorMsg: dataset.groups[\'Environment\'].variables[\'absorption_indicative\'].units has wrong info')
+
             
-            
-            
-            
+                
             
             
     def platform_group_test(fid): 
@@ -219,7 +271,7 @@ def testNetCDF(ncfilename):
         try: 
             fid.platform_code_ICES
         except: 
-            print('    - Warning msg xxx: platform code dont exist')
+            print('    - WarningMsg: platform code not specifed')
         
         try: 
             fid.platform_name
@@ -239,13 +291,16 @@ def testNetCDF(ncfilename):
                 print('    - error msg xxx, not a valid dimesion name')
             
             
+            
+            
         #Check distance variable
         try: 
             fid.variables['distance']
             do_distance = True
         except: 
-            print('    warning: distance not in file')
+            print('    WarningMsg: dataset.groups[\'Platform\'].variables[\'distance\'] do not exist')
             do_distance=False
+            
         if do_distance == True: 
             if not fid.variables['distance'].long_name == 'Distance travelled by the platform': 
                 print('    Error Msg: innvalid long name')
@@ -461,20 +516,29 @@ def testNetCDF(ncfilename):
     
     
     
-    
     #open new .nc file
     fid = Dataset(ncfilename,'r')
     
 
+    #Test of top level information
     TopLevel_test(fid)
     
     
-    annotation_group_test(fid.groups['Annotation'])
+    #Test of annotation information
+    try: 
+        fid.groups['Annotation']
+        test_annotation = True
+    except: 
+        test_annotation = False
+        print('No annotation information to test')
+        
+    if test_annotation == True: 
+        annotation_group_test(fid.groups['Annotation'])
     
     
     
     try: 
-        print('test environment group')
+        fid.groups['Environment']
         test_environment = True
     except KeyError: 
         print('   Warning: Environment group don\'t exist')

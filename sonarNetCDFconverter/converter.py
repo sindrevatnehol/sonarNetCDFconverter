@@ -32,19 +32,21 @@ def makeSonarNetCDF(ncfilename,FileData):
     '''
     
         
+    
+    
+    
+    
         
     def addGlobalAttributes(f)   : 
         '''fuction to set the global variables for the netcdf file'''
-        
-#        print('   -Creating top level information')
-#        print('    For now this s only dummy stuff for testing\n\n')
-        
         #Set the time of creation to the .nc file
         filetime=pytz.timezone('Europe/Oslo').localize(datetime.datetime.utcnow())
         
         
         #Write creation of file
         f.Conventions = 'CF-1.7, SONAR-netCDF4-1.0, ACDD-1.3'
+        
+        
         #f._NCProperties = 'version=1|netcdflibversion=4.6.1|hdf5libversion=1.8.20'
         f.date_created = str(filetime).replace(' ','T')
         f.keywords = 'Simrad '
@@ -58,14 +60,12 @@ def makeSonarNetCDF(ncfilename,FileData):
         
         
     
+    
+    
         
         
     def addAnnotation(fid): 
         '''Function to create annotation'''
-#        print('   - Creating annotation')
-#        print('     For now this is only dummy stuff for testing\n\n')
-#        
-        
         #Create group
         fid.createGroup('Annotation')
         
@@ -76,27 +76,62 @@ def makeSonarNetCDF(ncfilename,FileData):
         
         #Create annotaiton txt
         annotationTxt = fid.groups['Annotation'].createVariable('annotation_text',str,('time',), chunksizes = (512,))
-        annotationTxt.long_name = 'Annotaton text'
+        annotationTxt.long_name = "Annotation text"
     
         #Create annotation category    
         annotationTxt = fid.groups['Annotation'].createVariable('annotation_category',str,('time',), chunksizes = (512,))
-        annotationTxt.long_name = 'Annotation category'
+        annotationTxt.long_name = "Annotation category"
         
         
         #Make time into variable and add attributes
         time = fid.groups['Annotation'].createVariable('time',np.uint64,('time',), chunksizes = (512,))
-        #time.NAME = 'time'
         time.axis = 'T'
         time.calendar = 'gregorian'
         time.long_name = 'Timestamps of annotations'
         time.standard_name = 'time'
         time.units = 'nanoseconds since 1601-01-01 00:00:00Z'
         
+        
+        
+        
+        
+        
+        
+        
     
+    def addAnnotationData(fid,FileData): 
+        ''' Instructions of how to add annotation information '''
+        
+        
+        annotation_category = []
+        annotation_text = []
+        time = []
+        
+        
+        
+        #read the information
+        for i in range(len(FileData.Annotation.annotation_time)): 
+            annotation_category = np.hstack((annotation_category,FileData.Annotation.annotation_category[i]))
+            annotation_text = np.hstack((annotation_text,FileData.Annotation.annotation_text[i]))
+            time = np.hstack((time,FileData.Annotation.annotation_time[i]))
+        
+        
+        
+        #Write Environment information
+        for i in range(len(time)): 
+            fid.groups['Annotation'].variables['annotation_category'][i]=annotation_category[i]
+            fid.groups['Annotation'].variables['annotation_text'][i]=annotation_text[i]
+            fid.groups['Annotation'].variables['time'][i]=time[i]
+            
+        
+        
+        
+        
+        
+        
         
         
     def addEnvironment(fid): 
-#        print('   - creating Environment group')
         '''Function to create environment group'''
         fid.createGroup('Environment')
         
@@ -128,6 +163,8 @@ def makeSonarNetCDF(ncfilename,FileData):
         
     
     
+    
+    
         
         
     def addEnvironmentData(FileData, fid): 
@@ -140,8 +177,8 @@ def makeSonarNetCDF(ncfilename,FileData):
         
         for i in range(len(FileData.Environment.Frequency)): 
             Frequency_index = np.hstack((Frequency_index,FileData.Environment.Frequency[i]))
-            Absorption_index = np.hstack((Absorption_index,FileData.Environment.Frequency))
-            SoundVelocity_index = np.hstack((SoundVelocity_index,FileData.Environment.Frequency))
+            Absorption_index = np.hstack((Absorption_index,FileData.Environment.Absorption[i]))
+            SoundVelocity_index = np.hstack((SoundVelocity_index,FileData.Environment.SoundSpeed[i]))
         
         #Write Environment information
         
@@ -152,6 +189,8 @@ def makeSonarNetCDF(ncfilename,FileData):
     
         
     
+    
+    
         
         
     def addPlatform(fid,platform_code, platform_name, platform_type,FileData): 
@@ -159,6 +198,7 @@ def makeSonarNetCDF(ncfilename,FileData):
         
         
         def addDistanceTraveled(grp, index): 
+            '''Add the distance traveled variable '''
             grp.createDimension('time'+str(index),None)
             
             distance = grp.createVariable('distance',np.float,('time'+str(index),), chunksizes = (512,))
@@ -175,43 +215,53 @@ def makeSonarNetCDF(ncfilename,FileData):
             
             
             
-        def addHeading(grp,index):
+        def addHeading(grp,index,fid):
             grp.createDimension('time'+str(index),None)
             
-            heading = grp.createVariable('heading',np.float,('time'+str(index),), chunksizes = (512,))
-            heading.long_name = "Platform heading (true)"
-            heading.standard_name = "platform_orientation"
-            heading.units = "degrees_north"
-            heading.valid_range = [0.0, 360.0]
+            if not fid.Time == []: 
+                time = grp.createVariable('time'+str(index),np.uint64,('time'+str(index),), chunksizes = (512,))
+                time.axis = 'T'
+                time.calendar = 'gregorian'
+                time.long_name = 'Timestamps for NMEA datagrams'
+                time.standard_name = 'time'
+                time.units = 'nanoseconds since 1601-01-01 00:00:00Z'
             
-            time = grp.createVariable('time'+str(index),np.uint64,('time'+str(index),), chunksizes = (512,))
-            time.axis = 'T'
-            time.calendar = 'gregorian'
-            time.long_name = 'Timestamps for NMEA datagrams'
-            time.standard_name = 'time'
-            time.units = 'nanoseconds since 1601-01-01 00:00:00Z'
+            if not fid.Heading == []: 
+                heading = grp.createVariable('heading',np.float,('time'+str(index),), chunksizes = (512,))
+                heading.long_name = "Platform heading (true)"
+                heading.standard_name = "platform_orientation"
+                heading.units = "degrees_north"
+                heading.valid_range = [0.0, 360.0]
             
-            pitch = grp.createVariable('pitch',np.float,('time'+str(index),), chunksizes = (512,))
-            pitch.long_name = "Platform pitch"
-            pitch.standard_name = "platform_pitch_angle"
-            pitch.units = "arc_degree"
-            pitch.valid_range = [-90.0, 90.0]
             
-            roll = grp.createVariable('roll',np.float,('time'+str(index),), chunksizes = (512,))
-            roll.long_name = "Platform roll"
-            roll.standard_name = "platform_roll_angle"
-            roll.units = "arc_degree"
-            roll.valid_range = [-180.0, 180.0]
+            if not fid.Pitch == []: 
+                pitch = grp.createVariable('pitch',np.float,('time'+str(index),), chunksizes = (512,))
+                pitch.long_name = "Platform pitch"
+                pitch.standard_name = "platform_pitch_angle"
+                pitch.units = "arc_degree"
+                pitch.valid_range = [-90.0, 90.0]
             
-            speed_relative = grp.createVariable('speed_relative',np.float,('time'+str(index),), chunksizes = (512,))
-            speed_relative.long_name = "Platform speed relative to water"
-            speed_relative.standard_name = "platform_speed_wrt_seawater"
-            speed_relative.units = "m/s"
-            speed_relative.valid_min = 0.0
             
-            vertical_offset = grp.createVariable('vertical_offset',np.float,('time'+str(index),), chunksizes = (512,))
-            vertical_offset.long_name = "Platform vertical offset from nominal"
-            vertical_offset.units = "m"
+            if not fid.Roll == []:
+                roll = grp.createVariable('roll',np.float,('time'+str(index),), chunksizes = (512,))
+                roll.long_name = "Platform roll"
+                roll.standard_name = "platform_roll_angle"
+                roll.units = "arc_degree"
+                roll.valid_range = [-180.0, 180.0]
+            
+            
+            if not fid.SpeedRelative == []:
+                speed_relative = grp.createVariable('speed_relative',np.float,('time'+str(index),), chunksizes = (512,))
+                speed_relative.long_name = "Platform speed relative to water"
+                speed_relative.standard_name = "platform_speed_wrt_seawater"
+                speed_relative.units = "m/s"
+                speed_relative.valid_min = 0.0
+            
+            
+            if not fid.Heave == []:
+                vertical_offset = grp.createVariable('vertical_offset',np.float,('time'+str(index),), chunksizes = (512,))
+                vertical_offset.long_name = "Platform vertical offset from nominal"
+                vertical_offset.units = "m"
             
         
         
@@ -322,8 +372,11 @@ def makeSonarNetCDF(ncfilename,FileData):
             water_level.units = "m"
             
             
+            
         #make group
         fid.createGroup('Platform')
+        
+        
         
         #add group information
         grp = fid.groups['Platform']
@@ -332,13 +385,18 @@ def makeSonarNetCDF(ncfilename,FileData):
         grp.platform_type = platform_type
         
         
-        addNMEAtelegrams(grp)
+        #FileData.MRU.Distance = 5
         
-        addDistanceTraveled(fid.groups['Platform'],1)
+        if not FileData.MRU.Distance == {}: 
+            addDistanceTraveled(fid.groups['Platform'],1)
+            
+            #addDistanceTraveledData(fid.groups)
         
-        addHeading(fid.groups['Platform'],2)
+        #addHeading(fid.groups['Platform'],2,FileData.MRU)
         
         addGPS(grp,3)
+        
+        addNMEAtelegrams(grp)
         
         otherMRUstuff(grp)
         
@@ -346,7 +404,6 @@ def makeSonarNetCDF(ncfilename,FileData):
         
         
         
-#        grp.create_variable('MRU_offset_x',np.float32)
     
         
     def addNMEA_data(fid,FileData): 
@@ -355,14 +412,6 @@ def makeSonarNetCDF(ncfilename,FileData):
             fid.variables['time'][i]=FileData.NMEA.Time[i]
         fid.variables['test']=1
     
-    
-    
-    "dummy data"    
-    FileData.Environment.Frequency = [20000,30000]
-    FileData.Environment.Absorption = [2,2]
-    FileData.Environment.SoundSpeed = [1500,1500]
-
-
 
 
 
@@ -372,23 +421,47 @@ def makeSonarNetCDF(ncfilename,FileData):
     fid = Dataset(ncfilename,'w')
 
     
+    
+    
     #Add global variables
     addGlobalAttributes(fid) 
 
 
+
     
-    #Create annotation level
-    addAnnotation(fid)
+
+    try: 
+        FileData.Annotation
+        go_annotation = True
+    except: 
+        go_annotation = False
+        print('No annotation info avaliable')
+    if go_annotation == True: 
+        
+        #Create annotation level
+        addAnnotation(fid)
+        
+        addAnnotationData(fid,FileData)
+        
         
     
     if FileData.Environment.Frequency != []: 
-        #print('Making environment')
         #create environment level
         addEnvironment(fid)
             
         #add information into the environment group
         addEnvironmentData(FileData, fid)
         
+        
+    '''Dummy data'''
+    
+    
+    #define structure type
+    class structtype(): 
+        pass
+    
+    #FileData.MRU.Distance = [5]
+    
     
     #create platform level
     addPlatform(fid,'platform_code', 'vessel_name', 'platform_type',FileData)
