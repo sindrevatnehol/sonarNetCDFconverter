@@ -1,0 +1,22 @@
+This is a more extensive log entry:
+
+
+31.01.2019:  
+	Uploaded 3 functions:
+		readEK80
+		makeSonarNetCDF
+		testNetCDF
+
+
+	readEK80 is a function that reads the .raw file from Simrad EK80 and construct the information into a dataframe. This dataframe can then be used for further processing
+	The datastructure may change in the future after proper testing and after other equipment, i.e. SU90, EK60, MS70, has been added. 
+
+
+	makeSonarNetCDF is a function that reads the dataframe output from the reader and write the information to a netcdf file. 
+	This netcdf file follows the definintion given by the ICES. 
+	At current state, the maker function only make the structure of the netcdf data, but add no data into it. 
+
+
+	testNetCDF is a function to test if the netcdf file is correct according to the ICES standard. 
+	This function will be further modified as the makeSonarNetCDF are being modified. 
+
