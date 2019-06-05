@@ -20,3 +20,7 @@ This is a more extensive log entry:
 	testNetCDF is a function to test if the netcdf file is correct according to the ICES standard. 
 	This function will be further modified as the makeSonarNetCDF are being modified. 
 
+
+
+05.06.2019:
+	Small changes

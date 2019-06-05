@@ -8,6 +8,6 @@ setup(name='sonarNetCDFconverter',
       author_email='sindre.vatnehol@hi.no',
       license='GPL3',
       packages=['sonarNetCDFconverter',],
-      install_requires=['numpy','lxml','netCDF4','pytz', 'pynmea2', 'datetime',],
+   #   install_requires=['numpy','lxml','netCDF4','pytz', 'pynmea2', 'datetime',],
       zip_safe=False)
 

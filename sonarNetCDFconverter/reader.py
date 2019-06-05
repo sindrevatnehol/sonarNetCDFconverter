@@ -19,10 +19,40 @@ Trenger beskrivelse av strukturen av output som kan kalles opp ved hjelp
 import numpy as np
 import xml.etree.ElementTree as ET
 from lxml import etree
+import pynmea2
+    
 
 
 
-def readEK80(file): 
+
+def fread(fid, nelements, dtype):
+    #Small fuction to help to read the bite data    
+    
+    if dtype is np.str:
+        dt = np.uint8
+    else: 
+        dt = dtype 
+    if (isinstance( nelements, int )== True)or (isinstance( nelements, np.int32 )== True):
+        data_array = np.fromfile(fid, dt, nelements)
+    else:
+        try:  
+            data_array = np.fromfile(fid, dt, nelements[0])
+        except IndexError: 
+            data_array = np.fromfile(fid,dt,nelements)
+    return data_array; 
+    
+
+
+def StringArray(variabel): 
+    #Instruction of how to read string from bites
+    output = "" 
+    for variabels in variabel:
+        output = output+chr(variabels)
+    return output; 
+
+
+
+def defineStructure(): 
     
     
     ''' readEK80 function 
@@ -44,6 +74,7 @@ def readEK80(file):
     FileData.Version
     FileData.FileFormatVersion
     FileData.TimeBias
+    FileData.OriginalFileName
     
     
     
@@ -137,37 +168,6 @@ def readEK80(file):
     FileData.Platform
     '''
 
-
-
-
-    
-    def fread(fid, nelements, dtype):
-        #Small fuction to help to read the bite data    
-        
-        if dtype is np.str:
-            dt = np.uint8
-        else: 
-            dt = dtype 
-        if (isinstance( nelements, int )== True)or (isinstance( nelements, np.int32 )== True):
-            data_array = np.fromfile(fid, dt, nelements)
-        else:
-            try:  
-                data_array = np.fromfile(fid, dt, nelements[0])
-            except IndexError: 
-                data_array = np.fromfile(fid,dt,nelements)
-        return data_array; 
-        
-    
-    
-    def StringArray(variabel): 
-        #Instruction of how to read string from bites
-        output = "" 
-        for variabels in variabel:
-            output = output+chr(variabels)
-        return output; 
-
-    
-    
     
     #define structure type
     class structtype(): 
@@ -178,15 +178,46 @@ def readEK80(file):
     FileData = structtype() 
     
     
+    #Data format and sounder info
+    FileData.Copyright = []
+    FileData.ApplicationName=[]
+    FileData.Version=[]
+    FileData.FileFormatVersion=[]
+    FileData.TimeBias=[]
+    FileData.SounderName = []
+    FileData.SouderVersion=[]
+    FileData.SurveyName = []
+    FileData.OriginalFileName = []
+    FileData.SonarType = []
+    FileData.SonarConversionEquation = []
+    
+    
+    #Annotation group
+#    FileData.Annotation = structtype()
+#    FileData.Annotation.Time = []
+#    FileData.Annotation.Category = []
+#    FileData.Annotation.Text = []
+    
+    
     #Make environment group
     FileData.Environment = structtype()
+    FileData.Environment.Frequency = np.array([])
+    FileData.Environment.Absorption = np.array([])
+    FileData.Environment.SoundSpeed=np.array([])
     FileData.Environment.Depth=np.array([])
     FileData.Environment.Acidity=np.array([])
     FileData.Environment.Salinity=np.array([])
-    FileData.Environment.SoundSpeed=np.array([])
     FileData.Environment.Temperature=np.array([])
-    FileData.Environment.Frequency = np.array([])
-    FileData.Environment.Absorption = np.array([])
+    
+    
+    
+    #Platform
+    FileData.Platform = structtype()
+    FileData.Platform.GPS= structtype()
+    FileData.Platform.GPS.Latitude = np.array([])
+    FileData.Platform.GPS.Longitude = np.array([])
+    FileData.Platform.GPS.Time = np.array([])
+    
     
     
     #NMEa stuff
@@ -203,6 +234,7 @@ def readEK80(file):
     FileData.BeamGroup = dict()
     
     
+    
     #MRU data
     FileData.MRU = structtype()
     FileData.MRU.Heave = dict()
@@ -213,6 +245,96 @@ def readEK80(file):
     FileData.MRU.Distance = dict()
     FileData.MRU.SpeedRelative = dict()
     
+    
+    return FileData
+    
+
+#define structure type
+class structtype(): 
+    pass
+
+
+
+
+
+            
+
+def defineTranceiverStructure(): 
+    out = structtype()
+    out.TransceiverName=[]
+    out.EthernetAddress=[]
+    out.IPAddress=[]
+    out.Version=[]
+    out.TransceiverSoftwareVersion=[]
+    out.TransceiverNumber=[]
+    out.MarketSegment=[]
+    out.TransceiverType=[]
+    out.SerialNumber=[]
+    out.ChannelID=[]
+    out.ChannelIdShort=[]
+    out.ChannelNumber=[]
+    out.MaxTxPowerTransceiver=[]
+    out.PulseLength=[]
+    out.HWChannelConfiguration=[]
+    out.TransducerName=[]
+    out.SerialNumber=[]
+    out.Frequency=[]
+    out.FrequencyMinimum=[]
+    out.FrequencyMaximum=[]
+    out.BeamType=[]
+    out.EquivalentBeamAngle=[]
+    out.Gain=[]
+    out.SaCorrection=[]
+    out.MaxTxPowerTransducer=[]
+    out.BeamWidthAlongship=[]
+    out.BeamWidthAthwartship=[]
+    out.AngleSensitivityAlongship=[]
+    out.AngleSensitivityAthwartship=[]
+    out.AngleOffsetAlongship=[]
+    out.AngleOffsetAthwartship=[]
+    out.DirectivityDropAt2XBeamWidth=[]
+    return(out)
+
+
+
+def defineBeamGroup():
+    out = structtype()
+    out.ChannelID= []
+    out.ChannelMode=dict()
+    out.PulseForm=dict()
+    out.FrequencyStart=dict()
+    out.FrequencyEnd=dict()
+    out.BandWidth=dict()
+    out.PulseLength=dict()
+    out.SampleInterval=dict()
+    out.TransducerDepth=dict()
+    out.TransmitPower=dict()
+    out.Slope=dict()
+    out.time = dict()
+    out.backscatter_r= dict()
+    out.backscatter_i= dict()
+    out.Power = dict()
+    out.Angle = dict()
+    out.BeamMode= dict()
+    
+    
+    return out
+
+
+
+    
+    
+    
+def readEK80(file): 
+    
+
+    
+    FileData = defineStructure()
+    
+    
+    FileData.SonarType = 'WBT echosounder'
+    
+    FileData.SonarConversionEquation = 1
     
     def doXML0datagram(fid,FileData): 
     
@@ -252,7 +374,7 @@ def readEK80(file):
                     
                     #Get information of each tranceiver
                    for ii in range(len(root[i])): 
-                       FileData.Tranceiver[ii] = structtype()
+                       FileData.Tranceiver[ii] = defineTranceiverStructure()
                        
                        FileData.Tranceiver[ii].TransceiverName=root[i][ii].attrib.get('TransceiverName')
                        FileData.Tranceiver[ii].EthernetAddress=root[i][ii].attrib.get('EthernetAddress')
@@ -402,12 +524,12 @@ def readEK80(file):
            
            
            if root[0].tag == 'Channel': 
-#               FileData.BeamGroup[i]
                ChannelID=root[0].attrib.get('ChannelID')
                
                if len(FileData.BeamGroup) ==0: 
                    beam_group_idx = 0
                    FileData.BeamGroup[beam_group_idx] = structtype()
+                   FileData.BeamGroup[beam_group_idx].beam_mode = 'inspection'
                    FileData.BeamGroup[beam_group_idx].ChannelID= ChannelID
                    FileData.BeamGroup[beam_group_idx].ChannelMode=dict()
                    FileData.BeamGroup[beam_group_idx].PulseForm=dict()
@@ -430,6 +552,7 @@ def readEK80(file):
                    if not FileData.BeamGroup[beam_group_idx].ChannelID == ChannelID: 
                        beam_group_idx = beam_group_idx+1
                        FileData.BeamGroup[beam_group_idx] = structtype()
+                       FileData.BeamGroup[beam_group_idx].beam_mode = 'inspection'
                        FileData.BeamGroup[beam_group_idx].ChannelID= ChannelID
                        FileData.BeamGroup[beam_group_idx].ChannelMode=dict()
                        FileData.BeamGroup[beam_group_idx].PulseForm=dict()
@@ -516,6 +639,7 @@ def readEK80(file):
     fid = open(file)
     
     
+    FileData.OriginalFileName = [file]
     
     
     #loop through the file
@@ -668,8 +792,238 @@ def readEK80(file):
             break
     
         LengthStopp = (fread(fid,1,np.int32) )
-        
+    
+
+
+
+    
     fid.close()    
+    
+    
+    
+    #Fill inn GPS
+    nmea_Stacker = []
+    for i in range(len(FileData.NMEA.Telegram)): 
+        nmea_Stacker = np.hstack((nmea_Stacker,FileData.NMEA.Telegram[i][3:6]))
+        msg = pynmea2.parse(FileData.NMEA.Telegram[i])
+        if FileData.NMEA.Telegram[i][3:6] == 'GGA': 
+            FileData.Platform.GPS.Latitude = np.hstack((FileData.Platform.GPS.Latitude,msg.latitude))
+            FileData.Platform.GPS.Longitude = np.hstack((FileData.Platform.GPS.Longitude,msg.latitude))
+            FileData.Platform.GPS.Time = np.hstack((FileData.Platform.GPS.Time,FileData.NMEA.Time[i]))
+    
     
     return(FileData)
     
+    
+    
+    
+    
+    
+
+def readEK60(file): 
+    
+
+    #Get the sonar file structure
+    FileData = defineStructure()
+    
+    FileData.SonarType = 'GPT echosouder'
+    FileData.SonarConversionEquation = 1
+    
+    
+    #Open raw files
+    fid = open(file)
+    
+    
+    FileData.OriginalFileName = [file]
+    
+    #loop through the file
+    while(fid): 
+        
+        
+        #Get the legnth of the datagram
+        Length = (fread(fid,1,np.int32) )
+        
+        
+        
+        #Check if this is end of file
+        try: 
+            Length[0]
+        except IndexError: 
+            break
+        
+        
+        #get datagram type
+        datagramtype=StringArray(fread(fid,4,np.int8) )
+        
+        
+        #get time information
+        LowDateTime = fread(fid,1,np.int32)
+        HighDateTime = fread(fid,1,np.int32)
+        
+        
+        
+        #Convert this to 100 nanoseconds since 1/1 1601. 
+        #!!! This has not been confirmed
+        time =  (HighDateTime*2**32 + LowDateTime)/10000
+        time = time[0]
+        
+        
+        if datagramtype =='CON0':
+
+
+            #Data inforation
+            SurveyName=StringArray(fread(fid,128,np.int8) )
+            TransectName=StringArray(fread(fid,128,np.int8) )
+            SounderName=StringArray(fread(fid,128,np.int8) )
+            Version=StringArray(fread(fid,30,np.int8) )
+            spare=(fread(fid,98,np.int8) )
+            FileData.SounderName = SounderName
+            FileData.SouderVersion=Version
+            FileData.SurveyName = SurveyName
+            
+            TransducerCount = (fread(fid,1,np.int32) )[0]
+            for i in range(TransducerCount):
+                FileData.Tranceiver[i] = defineTranceiverStructure()
+                
+                ChannelID=StringArray(fread(fid,128,np.int8) )  #0 = single, 1 = splitt beam
+                BeamType = (fread(fid,1,np.int32) )[0]
+                Frequency = (fread(fid,1,np.float32) )[0]
+                Gain = (fread(fid,1,np.float32) )[0]
+                EquivalentBeamAngle = (fread(fid,1,np.float32) )[0]
+                BeamWidthAlongship = (fread(fid,1,np.float32) )[0]
+                BeamWidthAthwartship = (fread(fid,1,np.float32) )[0]
+                AngleSensitivityAlongship = (fread(fid,1,np.float32) )[0]
+                AngleSensitivityAthwartship = (fread(fid,1,np.float32) )[0]
+                AngleOffsetAlongship = (fread(fid,1,np.float32) )[0]
+                AngleOffsetAthwartship = (fread(fid,1,np.float32) )[0]
+                PosX = (fread(fid,1,np.float32) )[0]
+                PosY = (fread(fid,1,np.float32) )[0]
+                PosZ = (fread(fid,1,np.float32) )[0]
+                DirX = (fread(fid,1,np.float32) )[0]
+                DirY = (fread(fid,1,np.float32) )[0]
+                DirZ = (fread(fid,1,np.float32) )[0]
+                PulseLengthTable = (fread(fid,5,np.float32) )[0]
+                dummy1=StringArray(fread(fid,8,np.int8) )
+                GainTable = (fread(fid,5,np.float32) )[0]
+                dummy=StringArray(fread(fid,8,np.int8) )
+                SaCorrectioTable = (fread(fid,5,np.float32) )[0]
+                dummy2=StringArray(fread(fid,8,np.int8) )
+                GTSoftwareVersion=StringArray(fread(fid,16,np.int8) )
+                dummy=StringArray(fread(fid,28,np.int8) )
+                
+                FileData.Tranceiver[i].ChannelNumber=i
+                FileData.Tranceiver[i].PulseLength=PulseLengthTable
+                FileData.Tranceiver[i].Frequency = Frequency
+                FileData.Tranceiver[i].FrequencyMinimum = Frequency
+                FileData.Tranceiver[i].FrequencyMaximum = Frequency
+                FileData.Tranceiver[i].BeamType = ChannelID
+                FileData.Tranceiver[i].EquivalentBeamAngle = EquivalentBeamAngle
+                FileData.Tranceiver[i].Gain = Gain
+                FileData.Tranceiver[i].SaCorrection=SaCorrectioTable
+                FileData.Tranceiver[i].MaxTxPowerTransducer=[]
+                FileData.Tranceiver[i].BeamWidthAlongship=BeamWidthAlongship
+                FileData.Tranceiver[i].BeamWidthAthwartship=BeamWidthAthwartship
+                FileData.Tranceiver[i].AngleSensitivityAlongship=AngleSensitivityAlongship
+                FileData.Tranceiver[i].AngleSensitivityAthwartship=AngleSensitivityAthwartship
+                FileData.Tranceiver[i].AngleOffsetAlongship=AngleOffsetAlongship
+                FileData.Tranceiver[i].AngleOffsetAthwartship=AngleOffsetAthwartship
+                FileData.Tranceiver[i].DirectivityDropAt2XBeamWidth=[]
+                FileData.Tranceiver[i].TransducerName=GTSoftwareVersion
+                
+
+
+
+        elif datagramtype == 'NME0': 
+            NME0=StringArray(fread(fid,Length-12,np.int8) )
+            
+            FileData.NMEA.Telegram[len(FileData.NMEA.Telegram)] = NME0
+            FileData.NMEA.Time[len(FileData.NMEA.Time)] = time
+            
+            
+            
+            
+            
+            
+        elif datagramtype == 'RAW0': 
+            Channel = (fread(fid,1,np.int16) )[0]
+            Mode = (fread(fid,1,np.int16) )[0]
+            TransducerDepth = (fread(fid,1,np.float32) )[0]
+            Frequency = (fread(fid,1,np.float32) )[0]
+            TransmitPower = (fread(fid,1,np.float32) )[0]
+            PulseLength = (fread(fid,1,np.float32) )[0]
+            BandWidth = (fread(fid,1,np.float32) )[0]
+            SampleInterval = (fread(fid,1,np.float32) )[0]
+            SoundVelocity = (fread(fid,1,np.float32) )[0]
+            AbsorptionCoefficient = (fread(fid,1,np.float32) )[0]
+            Heave = (fread(fid,1,np.float32) )[0]
+            TXRoll = (fread(fid,1,np.float32) )[0]
+            TXPitch = (fread(fid,1,np.float32) )[0]
+            Temperature = (fread(fid,1,np.float32) )[0]
+            (fread(fid,1,np.int16) )[0]
+            (fread(fid,1,np.int16) )[0]
+            RXroll = (fread(fid,1,np.float32) )[0]
+            RXpitch = (fread(fid,1,np.float32) )[0]
+            Offset = (fread(fid,1,np.int32) )[0]
+            Count = (fread(fid,1,np.int32) )[0]
+            Power = (fread(fid,Count,np.int16) )*10*np.log(2)/256
+            Angle = (fread(fid,Count,np.int16) )
+            
+            
+            try: 
+                FileData.BeamGroup[Channel-1]
+            except KeyError: 
+                FileData.BeamGroup[Channel-1] = defineBeamGroup()
+                FileData.BeamGroup[Channel-1].ChannelID= Channel
+                FileData.BeamGroup[Channel-1].beam_mode = 'inspection'
+                FileData.BeamGroup[Channel-1].NumberOfBeams = 1
+                
+            
+            
+            FileData.BeamGroup[Channel-1].ChannelMode[len(FileData.BeamGroup[Channel-1].ChannelMode)]=Mode
+            FileData.BeamGroup[Channel-1].FrequencyStart[len(FileData.BeamGroup[Channel-1].FrequencyStart)]=Frequency
+            FileData.BeamGroup[Channel-1].FrequencyEnd[len(FileData.BeamGroup[Channel-1].FrequencyEnd)]=Frequency
+            FileData.BeamGroup[Channel-1].BandWidth[len(FileData.BeamGroup[Channel-1].BandWidth)]=BandWidth
+            FileData.BeamGroup[Channel-1].PulseLength[len(FileData.BeamGroup[Channel-1].PulseLength)]=PulseLength
+            FileData.BeamGroup[Channel-1].SampleInterval[len(FileData.BeamGroup[Channel-1].SampleInterval)]=SampleInterval
+            FileData.BeamGroup[Channel-1].TransducerDepth[len(FileData.BeamGroup[Channel-1].TransducerDepth)]=TransducerDepth
+            FileData.BeamGroup[Channel-1].TransmitPower[len(FileData.BeamGroup[Channel-1].TransmitPower)]=TransmitPower
+            FileData.BeamGroup[Channel-1].time[len(FileData.BeamGroup[Channel-1].time)]=time
+            FileData.BeamGroup[Channel-1].Power[len(FileData.BeamGroup[Channel-1].Power)] = [Power]
+            FileData.BeamGroup[Channel-1].Angle[len(FileData.BeamGroup[Channel-1].Angle)] = [Angle]
+            
+                   
+            
+
+            FileData.MRU.Heave[len(FileData.MRU.Heave)] = Heave
+            FileData.MRU.Time[len(FileData.MRU.Time)] = time
+            FileData.MRU.Roll[len(FileData.MRU.Roll)] = TXRoll
+            FileData.MRU.Pitch[len(FileData.MRU.Pitch)] = TXPitch
+            
+        else: 
+            break
+        
+        Length_stop = (fread(fid,1,np.int32) )
+        
+        if not Length[0] == Length_stop[0]: 
+            print('bad telegram length')
+            break
+            
+
+    fid.close()    
+    
+    
+    
+    
+    #Fill inn GPS
+    nmea_Stacker = []
+    for i in range(len(FileData.NMEA.Telegram)): 
+        nmea_Stacker = np.hstack((nmea_Stacker,FileData.NMEA.Telegram[i][3:6]))
+        msg = pynmea2.parse(FileData.NMEA.Telegram[i])
+        if FileData.NMEA.Telegram[i][3:6] == 'GGA': 
+            FileData.Platform.GPS.Latitude = np.hstack((FileData.Platform.GPS.Latitude,msg.latitude))
+            FileData.Platform.GPS.Longitude = np.hstack((FileData.Platform.GPS.Longitude,msg.latitude))
+            FileData.Platform.GPS.Time = np.hstack((FileData.Platform.GPS.Time,FileData.NMEA.Time[i]))
+    
+    
+    
+    return(FileData)
