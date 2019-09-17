@@ -1,2 +1,5 @@
 # sonarNetCDFconverter
-Tools for converting sonar data into the ICES netcdf format
+
+Tools for read and converting acoustic data into the ICES netcdf format
+
+
